@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Downloader</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .logo svg {
+      flex-shrink: 0;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 13px;
+      margin-bottom: 32px;
+      margin-top: 4px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #aaa;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #urlInput {
+      width: 100%;
+      padding: 13px 16px;
+      font-size: 15px;
+      background: #2a2a2a;
+      border: 1.5px solid #3a3a3a;
+      color: #fff;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #urlInput::placeholder { color: #555; }
+
+    #urlInput:focus { border-color: #ff0000; }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    button {
+      flex: 1;
+      padding: 13px 12px;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #btnMp4 { background: #ff0000; color: #fff; }
+    #btnMp3 { background: #333; color: #fff; }
+
+    .status {
+      margin-top: 20px;
+      padding: 13px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status.loading {
+      display: flex;
+      background: rgba(96, 165, 250, 0.1);
+      color: #60a5fa;
+      border: 1px solid rgba(96, 165, 250, 0.2);
+    }
+
+    .status.success {
+      display: flex;
+      background: rgba(74, 222, 128, 0.1);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.2);
+    }
+
+    .status.error {
+      display: flex;
+      background: rgba(248, 113, 113, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(96, 165, 250, 0.3);
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .note {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.6;
+      border-top: 1px solid #2a2a2a;
+      padding-top: 20px;
+    }
+
+    .note a { color: #888; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#ff0000"/>
+        <path d="M23.5 16C23.5 16 23.5 19.6 23.05 21.35C22.8 22.32 22.05 23.08 21.09 23.33C19.35 23.79 16 23.79 16 23.79C16 23.79 12.66 23.79 10.91 23.33C9.95 23.08 9.2 22.32 8.95 21.35C8.5 19.61 8.5 16 8.5 16C8.5 16 8.5 12.39 8.95 10.65C9.2 9.68 9.95 8.92 10.91 8.67C12.65 8.21 16 8.21 16 8.21C16 8.21 19.35 8.21 21.09 8.67C22.05 8.92 22.8 9.68 23.05 10.65C23.5 12.39 23.5 16 23.5 16ZM14.27 13.43V18.57L18.73 16L14.27 13.43Z" fill="white"/>
+      </svg>
+      <h1>YouTube Downloader</h1>
+    </div>
+    <p class="subtitle">Powered by Cobalt &middot; runs entirely in your browser</p>
+
+    <label for="urlInput">YouTube URL</label>
+    <input
+      type="url"
+      id="urlInput"
+      placeholder="https://www.youtube.com/watch?v=..."
+      autocomplete="off"
+      spellcheck="false"
+    />
+
+    <div class="button-group">
+      <button id="btnMp4" onclick="startDownload('video')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+        MP4 Video
+      </button>
+      <button id="btnMp3" onclick="startDownload('audio')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+        MP3 Audio
+      </button>
+    </div>
+
+    <div id="status" role="status" aria-live="polite"></div>
+
+    <p class="note">
+      Downloads are processed by <a href="https://cobalt.tools" target="_blank" rel="noopener">cobalt.tools</a>.
+      For large videos, the file loads into memory before saving &mdash; this may take a moment.
+      If opening locally via <code>file://</code> in Chrome, try serving with
+      <code>python3 -m http.server 8080</code> instead.
+    </p>
+  </div>
+
+  <script>
+    const COBALT_API = 'https://api.cobalt.tools/';
+
+    function isValidYouTubeUrl(url) {
+      try {
+        const u = new URL(url);
+        const validHosts = ['www.youtube.com', 'youtube.com', 'youtu.be', 'm.youtube.com'];
+        if (!validHosts.includes(u.hostname)) return false;
+        if (u.hostname === 'youtu.be') return u.pathname.length > 1;
+        return u.searchParams.has('v') || u.pathname.startsWith('/shorts/') || u.pathname.startsWith('/embed/');
+      } catch {
+        return false;
+      }
+    }
+
+    async function fetchFromCobalt(youtubeUrl, downloadMode) {
+      const res = await fetch(COBALT_API, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: youtubeUrl,
+          downloadMode,
+          filenameStyle: 'pretty',
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Cobalt API error: HTTP ${res.status}`);
+      }
+
+      return res.json();
+    }
+
+    function resolveDownloadUrl(data) {
+      const filename = data.filename ?? null;
+
+      switch (data.status) {
+        case 'redirect':
+        case 'tunnel':
+          return { url: data.url, filename };
+
+        case 'picker':
+          if (data.picker && data.picker.length > 0) {
+            return { url: data.picker[0].url, filename: filename ?? data.picker[0].filename ?? null };
+          }
+          throw new Error('No downloadable streams found in picker response');
+
+        case 'error':
+          throw new Error(data.error?.code ?? 'Cobalt returned an unspecified error');
+
+        default:
+          throw new Error(`Unexpected Cobalt response status: "${data.status}"`);
+      }
+    }
+
+    async function triggerDownload(mediaUrl, filename, type) {
+      setStatus('loading', 'Fetching media… this may take a moment for longer videos');
+
+      const res = await fetch(mediaUrl);
+      if (!res.ok) throw new Error(`Media fetch failed: HTTP ${res.status}`);
+
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = filename ?? `${type}-${Date.now()}.${type === 'audio' ? 'mp3' : 'mp4'}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+    }
+
+    async function startDownload(type) {
+      const url = document.getElementById('urlInput').value.trim();
+
+      if (!url) {
+        setStatus('error', 'Please paste a YouTube URL first.');
+        return;
+      }
+      if (!isValidYouTubeUrl(url)) {
+        setStatus('error', "That doesn’t look like a valid YouTube URL. Make sure it includes youtube.com or youtu.be.");
+        return;
+      }
+
+      const downloadMode = type === 'audio' ? 'audio' : 'auto';
+      setButtons(true);
+
+      try {
+        setStatus('loading', 'Contacting Cobalt API…');
+        const data = await fetchFromCobalt(url, downloadMode);
+        const { url: mediaUrl, filename } = resolveDownloadUrl(data);
+
+        await triggerDownload(mediaUrl, filename, type);
+        setStatus('success', 'Download started! Check your Downloads folder.');
+      } catch (err) {
+        setStatus('error', `Error: ${err.message}`);
+      } finally {
+        setButtons(false);
+      }
+    }
+
+    function setStatus(state, message) {
+      const el = document.getElementById('status');
+      el.className = `status ${state}`;
+
+      if (state === 'loading') {
+        el.innerHTML = `<div class="spinner"></div><span>${message}</span>`;
+      } else if (state === 'success') {
+        el.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg><span>${message}</span>`;
+      } else {
+        el.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>${message}</span>`;
+      }
+    }
+
+    function setButtons(disabled) {
+      document.getElementById('btnMp4').disabled = disabled;
+      document.getElementById('btnMp3').disabled = disabled;
+    }
+
+    // Allow pressing Enter in the input to trigger MP4 download
+    document.getElementById('urlInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') startDownload('video');
+    });
+  </script>
+</body>
+</html>
